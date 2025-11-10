@@ -1,5 +1,3 @@
-// Post.js - Mongoose model for blog posts
-
 const mongoose = require('mongoose');
 
 const PostSchema = new mongoose.Schema(
@@ -20,27 +18,25 @@ const PostSchema = new mongoose.Schema(
     },
     slug: {
       type: String,
-      required: true,
       unique: true,
     },
     excerpt: {
       type: String,
       maxlength: [200, 'Excerpt cannot be more than 200 characters'],
     },
+    // Temporarily optional for testing
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
     },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
-      required: true,
     },
     tags: [String],
     isPublished: {
       type: Boolean,
-      default: false,
+      default: true, // default true so posts appear immediately
     },
     viewCount: {
       type: Number,
@@ -66,35 +62,12 @@ const PostSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Create slug from title before saving
+// Generate slug from title
 PostSchema.pre('save', function (next) {
-  if (!this.isModified('title')) {
-    return next();
+  if (this.title && !this.slug) {
+    this.slug = this.title.toLowerCase().replace(/[^\w ]+/g, '').replace(/ +/g, '-');
   }
-  
-  this.slug = this.title
-    .toLowerCase()
-    .replace(/[^\w ]+/g, '')
-    .replace(/ +/g, '-');
-    
   next();
 });
 
-// Virtual for post URL
-PostSchema.virtual('url').get(function () {
-  return `/posts/${this.slug}`;
-});
-
-// Method to add a comment
-PostSchema.methods.addComment = function (userId, content) {
-  this.comments.push({ user: userId, content });
-  return this.save();
-};
-
-// Method to increment view count
-PostSchema.methods.incrementViewCount = function () {
-  this.viewCount += 1;
-  return this.save();
-};
-
-module.exports = mongoose.model('Post', PostSchema); 
+module.exports = mongoose.model('Post', PostSchema);
